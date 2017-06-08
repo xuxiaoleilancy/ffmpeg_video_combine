@@ -1,12 +1,12 @@
 /**
 *
-* ���� Hui Zhang
+* 张晖 Hui Zhang
 * zhanghuicuc@gmail.com
-* �й���ý��ѧ/���ֵ��Ӽ���
+* 中国传媒大学/数字电视技术
 * Communication University of China / Digital TV Technology
 *
-* ������ʵ���˶Զ�·��Ƶ���кϲ�ʵ�ַ���Ч��,���ҿ������Ӳ�ͬ����Ƶ�˾���
-* Ŀǰ����֧����Ƶ�ϲ�
+* 本程序实现了对多路视频进行合并实现分屏效果,并且可以添加不同的视频滤镜。
+* 目前还不支持音频合并
 */
 
 #include <stdio.h>
@@ -72,7 +72,7 @@ typedef struct InputFile{
 	* 0 - 1 - 2
 	* 3 - 4 - 5
 	* 6 - 7 - 8
-	* ����
+	* ……
 	*/
 	uint32_t video_idx;
 	//scale level, 0 means keep the same
@@ -445,7 +445,7 @@ end:
 
 static int init_spec_filter(void)
 {
-	char filter_spec[512];
+	char filter_spec[5120];
 	char spec_temp[128];
 	unsigned int i;
 	unsigned int j;
@@ -650,7 +650,7 @@ int videocombine(GlobalContext* video_ctx)
 					AVRational r_framerate1 = ifmt_ctx[0]->streams[stream_index]->r_frame_rate;// { 50, 2 };
 					AVRational time_base_q = { 1, AV_TIME_BASE };
 					//Duration between 2 frames (us)
-					int64_t calc_duration = (double)(AV_TIME_BASE)*(1 / av_q2d(r_framerate1));	//�ڲ�ʱ���
+					int64_t calc_duration = (double)(AV_TIME_BASE)*(1 / av_q2d(r_framerate1));	//内部时间戳
 					//Parameters
 					//enc_pkt.pts = (double)(framecnt*calc_duration)*(double)(av_q2d(time_base_q)) / (double)(av_q2d(time_base));
 					enc_pkt.pts = av_rescale_q(framecnt*calc_duration, time_base_q, time_base);
@@ -708,14 +708,14 @@ flush:
 			AVRational r_framerate1 = ifmt_ctx[0]->streams[stream_index]->r_frame_rate;// { 50, 2 };
 			AVRational time_base_q = { 1, AV_TIME_BASE };
 			//Duration between 2 frames (us)
-			int64_t calc_duration = (double)(AV_TIME_BASE)*(1 / av_q2d(r_framerate1));	//�ڲ�ʱ���
+			int64_t calc_duration = (double)(AV_TIME_BASE)*(1 / av_q2d(r_framerate1));	//内部时间戳
 			//Parameters
 			enc_pkt.pts = av_rescale_q(framecnt*calc_duration, time_base_q, time_base);
 			enc_pkt.dts = enc_pkt.pts;
 			enc_pkt.duration = av_rescale_q(calc_duration, time_base_q, time_base);
 
 			/* copy packet*/
-			//ת��PTS/DTS��Convert PTS/DTS��
+			//转换PTS/DTS（Convert PTS/DTS）
 			enc_pkt.pos = -1;
 			framecnt++;
 			ofmt_ctx->duration = enc_pkt.duration * framecnt;
@@ -771,7 +771,7 @@ end:
 int main(int argc, char **argv)
 {
 	//test 2x2
-	inputfiles = (InputFile*)av_malloc_array(4, sizeof(InputFile));
+	inputfiles = (InputFile*)av_malloc_array(9, sizeof(InputFile));
 	if (!inputfiles)
 		return AVERROR(ENOMEM);
 
@@ -779,7 +779,7 @@ int main(int argc, char **argv)
 	inputfiles[0].filenames = "in1.flv";
 	//inputfiles[0].video_expand = 0;
 	inputfiles[0].video_idx = 0;
-	inputfiles[0].video_effect = VFX_EDGE;
+	inputfiles[0].video_effect = AFX_NULL;//VFX_EDGE
 	inputfiles[0].audio_effect = AFX_NULL;
 	inputfiles[1].filenames = "in2.flv";
 	//inputfiles[1].video_expand = 0;
@@ -794,15 +794,42 @@ int main(int argc, char **argv)
 	inputfiles[3].filenames = "in4.flv";
 	//inputfiles[3].video_expand = 0;
 	inputfiles[3].video_idx = 3;
-	inputfiles[3].video_effect = VFX_NEGATE;
+	inputfiles[3].video_effect = AFX_NULL;//VFX_NEGATE
 	inputfiles[3].audio_effect = AFX_NULL;
 
+	inputfiles[4].filenames = "in5.flv";
+	//inputfiles[0].video_expand = 0;
+	inputfiles[4].video_idx = 4;
+	inputfiles[4].video_effect = VFX_EDGE;
+	inputfiles[4].audio_effect = AFX_NULL;
+	inputfiles[5].filenames = "in6.flv";
+	//inputfiles[1].video_expand = 0;
+	inputfiles[5].video_idx = 5;
+	inputfiles[5].video_effect = VFX_NULL;
+	inputfiles[5].audio_effect = AFX_NULL;
+	inputfiles[6].filenames = "in7.flv";
+	//inputfiles[2].video_expand = 0;
+	inputfiles[6].video_idx = 6;
+	inputfiles[6].video_effect = VFX_NULL;
+	inputfiles[6].audio_effect = AFX_NULL;
+	inputfiles[7].filenames = "in8.flv";
+	//inputfiles[3].video_expand = 0;
+	inputfiles[7].video_idx = 7;
+	inputfiles[7].video_effect = VFX_NEGATE;
+	inputfiles[7].audio_effect = AFX_NULL;
+
+	inputfiles[8].filenames = "in3.flv";
+	//inputfiles[3].video_expand = 0;
+	inputfiles[8].video_idx = 8;
+	inputfiles[8].video_effect = VFX_EDGE;
+	inputfiles[8].audio_effect = AFX_NULL;
+
 	global_ctx = (GlobalContext*)av_malloc(sizeof(GlobalContext));
-	global_ctx->video_num = 4;
-	global_ctx->grid_num = 4;
-	global_ctx->enc_bit_rate = 500000;
-	global_ctx->enc_height = 360;
-	global_ctx->enc_width = 640;
+	global_ctx->video_num = 9;
+	global_ctx->grid_num = 9;
+	global_ctx->enc_bit_rate = 5000000;
+	global_ctx->enc_height = 1080;
+	global_ctx->enc_width = 1920;
 	global_ctx->outfilename = "combined.flv";
 	global_ctx->input_file = inputfiles;
 
