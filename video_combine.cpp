@@ -771,7 +771,7 @@ end:
 int main(int argc, char **argv)
 {
 	//test 2x2
-	inputfiles = (InputFile*)av_malloc_array(9, sizeof(InputFile));
+	inputfiles = (InputFile*)av_malloc_array(25, sizeof(InputFile));
 	if (!inputfiles)
 		return AVERROR(ENOMEM);
 
@@ -824,9 +824,27 @@ int main(int argc, char **argv)
 	inputfiles[8].video_effect = VFX_EDGE;
 	inputfiles[8].audio_effect = AFX_NULL;
 
+	for (int i = 9; i < 25; i++)
+	{
+		int fileIndex = i % 4;
+		if (0 == fileIndex){
+			inputfiles[i].filenames = "in1.flv";
+		}else if (1 == fileIndex){
+			inputfiles[i].filenames = "in2.flv";
+		}else if (2 == fileIndex){
+			inputfiles[i].filenames = "in3.flv";
+		}
+		else{
+			inputfiles[i].filenames = "in4.flv";
+		}
+		//inputfiles[3].video_expand = 0;
+		inputfiles[i].video_idx = i;
+		inputfiles[i].video_effect = VFX_NULL;
+		inputfiles[i].audio_effect = AFX_NULL;
+	}
 	global_ctx = (GlobalContext*)av_malloc(sizeof(GlobalContext));
-	global_ctx->video_num = 9;
-	global_ctx->grid_num = 9;
+	global_ctx->video_num = 25;
+	global_ctx->grid_num = 25;
 	global_ctx->enc_bit_rate = 5000000;
 	global_ctx->enc_height = 1080;
 	global_ctx->enc_width = 1920;
